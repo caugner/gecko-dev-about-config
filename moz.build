@@ -8,3 +8,4 @@ with Files('**'):
     BUG_COMPONENT = ('Toolkit', 'Preferences')
 
 JAR_MANIFESTS += ['jar.mn']
+BROWSER_CHROME_MANIFESTS += ['test/browser.ini']
