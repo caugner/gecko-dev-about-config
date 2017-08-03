@@ -1,5 +1,9 @@
 "use strict";
 
+const DEFAULT_BOOL_PREF = "general.autoScroll";
+const DEFAULT_CHAR_PREF = "general.useragent.locale";
+const DEFAULT_INT_PREF = "general.config.obscure_value";
+
 function AboutConfigClient(document) {
   this.document = document;
 };
@@ -189,3 +193,76 @@ function checkContextMenu(aContextMenu, aExpectedEntries, aWindow = window) {
     }
   }
 }
+
+async function disableAboutConfigWarning()
+{
+  await SpecialPowers.pushPrefEnv({
+    set: [["general.warnOnAboutConfig", false]]
+  });
+}
+
+async function testInAboutConfig(test) {
+  disableAboutConfigWarning();
+  await BrowserTestUtils.withNewTab("about:config", async function(browser) {
+    const client = new AboutConfigClient(browser.contentDocument);
+    await test(client);
+  });
+}
+
+let expectedRows = [{
+    pref: "test.bool.false",
+    status: "modified",
+    type: "boolean",
+    value: "false"
+  },{
+    pref: "test.bool.true",
+    status: "modified",
+    type: "boolean",
+    value: "true"
+  },{
+    pref: "test.char.empty",
+    status: "modified",
+    type: "string",
+    value: ""
+  },{
+    pref: "test.char.foo",
+    status: "modified",
+    type: "string",
+    value: "foo"
+  },{
+    pref: "test.int.minus",
+    status: "modified",
+    type: "integer",
+    value: "-1"
+  },{
+    pref: "test.int.plus",
+    status: "modified",
+    type: "integer",
+    value: "1"
+  },{
+    pref: "test.int.zero",
+    status: "modified",
+    type: "integer",
+    value: "0"
+  }
+];
+
+function setupCustomTestPrefs() {
+  Services.prefs.setBoolPref("test.bool.false", false);
+  Services.prefs.setBoolPref("test.bool.true", true);  
+
+  Services.prefs.setCharPref("test.char.empty", "");
+  Services.prefs.setCharPref("test.char.foo", "foo");
+
+  Services.prefs.setIntPref("test.int.minus", -1);
+  Services.prefs.setIntPref("test.int.plus", 1);
+  Services.prefs.setIntPref("test.int.zero", 0);
+};
+
+function add_about_config_test(asyncFunction) {
+  add_task(async function() {
+    setupCustomTestPrefs();
+
+    await testInAboutConfig(asyncFunction);
+  });
+};
